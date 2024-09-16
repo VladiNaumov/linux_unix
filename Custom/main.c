@@ -6,7 +6,7 @@
  *  GK 2/5/95  -  Changed to support mounting root fs via NFS
  *  Added initrd & change_root: Werner Almesberger & Hans Lermen, Feb '96
  *  Moan early if gcc is old, avoiding bogus kernels - Paul Gortmaker, May '96
- *  Simplified starting of init:  Michael A. Griffith <grif@acm.org> 
+ *  Simplified starting of init:  Michael A. Griffith <grif@acm.org>
  */
 
 #include <linux/types.h>
@@ -384,7 +384,7 @@ static void __init smp_init(void)
 {
 	unsigned int cpu;
 
-	/*  This should be done in userspace --RR (Это должно быть сделано в пользовательском пространстве --RR) */
+	/* This should be done in userspace --RR (Это должно быть сделано в пользовательском пространстве --RR) */
 	for_each_present_cpu(cpu) {
 		if (num_online_cpus() >= setup_max_cpus)
 			break;
