@@ -384,7 +384,7 @@ static void __init smp_init(void)
 {
 	unsigned int cpu;
 
-	/* This should be done in userspace --RR (Это должно быть сделано в пользовательском пространстве --RR) */
+	/*  This should be done in userspace --RR (Это должно быть сделано в пользовательском пространстве --RR) */
 	for_each_present_cpu(cpu) {
 		if (num_online_cpus() >= setup_max_cpus)
 			break;
