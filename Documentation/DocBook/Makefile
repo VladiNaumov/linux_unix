@@ -25,7 +25,7 @@ DOCBOOKS := z8530book.xml mcabook.xml device-drivers.xml \
 #                        +--> man/      (mandocs)  [by xmlto]
 
 
-# for PDF and PS output you can choose between xmlto and docbook-utils tools
+# for LISTING and PS output you can choose between xmlto and docbook-utils tools
 PDF_METHOD	= $(prefer-db2x)
 PS_METHOD	= $(prefer-db2x)
 
