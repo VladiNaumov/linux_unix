@@ -88,7 +88,7 @@ $ ./12-2
 					2729 pirate.bin
 					2839 pirate.bin
 					2842 pirate.bin
-					2882 core-linux-amd6
+					2882 core-linux_kernel-amd6
 					2907 pirate.bin
 			2749 Xwayland
 			3113 bwrap

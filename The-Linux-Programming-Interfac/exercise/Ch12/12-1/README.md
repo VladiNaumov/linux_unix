@@ -101,7 +101,7 @@ gsd-xsettings 2783
 ibus-x11 2810
 pirate.bin 2839
 pirate.bin 2842
-core-linux-amd6 2882
+core-linux_kernel-amd6 2882
 pirate.bin 2907
 bwrap 3113
 flatpak-session 3119

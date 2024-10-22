@@ -14,7 +14,7 @@ set to 0 at runtime, so there is no need to store these 0s (empty bytes) in ELF.
 $ gcc mem_segments.c ../lib/error_functions.c -o mem_segments
 
 $ file mem_segments
-mem_segments: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=832a6ab1736ea9e00de4c503b4ea49bc8eafb865, for GNU/Linux 3.2.0, not stripped
+mem_segments: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux_kernel-x86-64.so.2, BuildID[sha1]=832a6ab1736ea9e00de4c503b4ea49bc8eafb865, for GNU/Linux 3.2.0, not stripped
 
 $ readelf -a mem_segments > readelf_results
 ```

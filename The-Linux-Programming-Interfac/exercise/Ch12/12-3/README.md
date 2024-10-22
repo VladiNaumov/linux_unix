@@ -34,7 +34,7 @@ Name:	pipewire-pulse
 Name:	LibCyber-V2.1.0
 Name:	pirate.bin
 Name:	pirate.bin
-Name:	core-linux-amd6
+Name:	core-linux_kernel-amd6
 Name:	tmux: server
 Name:	dbus-broker-lau
 Name:	dbus-broker
