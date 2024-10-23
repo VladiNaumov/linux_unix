@@ -5,11 +5,11 @@ https://elixir.bootlin.com/linux/v2.6.39.4/source
 
 ## 2. MINIX 3 - source codes
 
-## 3. The-Linue-Programming-Interface
+## 3. The-Linux-Programming-Interface (Linux API)
 Src of The Linux Programming Interface and its Rust implementation (Exercise included)
 
 #### Chapters and their corresponding directories
-4. System Programming Concepts
+3. System Programming Concepts
 4. File I/O: The Universal I/O
 5. File I/O: Further Details
 6. Processes
