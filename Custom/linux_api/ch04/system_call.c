@@ -1,55 +1,99 @@
+/* 4. File I/O: The Universal I/O */
+
 #include <sys/stat.h>
 #include <fcntl.h>
 
-/* The open() system call either opens an existing file or creates and opens a new file. */
-int open(const char * pathname , int  flags , ... /* mode_t  mode  */);
-//Returns file descriptor on success, or –1 on error
+/* Системный вызов open() либо открывает существующий файл, либо создает и открывает новый файл. */
+int open(const char *pathname, int flags, ... /* mode_t mode */);
+// Возвращает файловый дескриптор при успешном выполнении или -1 при ошибке
 
 /*
-    In early UNIX implementations, open() had only two arguments and could not be
-    used to create a new file. Instead, the creat() system call was used to create and open
-    a new file.
+    В ранних реализациях UNIX open() имел только два аргумента и не мог создавать
+    новый файл. Для создания и открытия нового файла использовался системный вызов creat().
 */
-int creat(const char * pathname , mode_t  mode );
-// Returns file descriptor, or –1 on error
+int creat(const char *pathname, mode_t mode);
+// Возвращает файловый дескриптор или -1 при ошибке
 
-/* The read() system call reads data from the open file referred to by the descriptor fd. */
-ssize_t read(int  fd , void * buffer , size_t  count );
-// Returns number of bytes read, 0 on EOF, or –1 on error
+/* Системный вызов read() читает данные из открытого файла, на который указывает дескриптор fd. */
+ssize_t read(int fd, void *buffer, size_t count);
+// Возвращает количество прочитанных байтов, 0 при достижении конца файла или -1 при ошибке
 
-/* The write() system call writes data to an open file. */
-ssize_t write(int fd, void * buffer , size_t  count );
-// Returns number of bytes written, or –1 on error
-
-/*
-    The close() system call closes an open file descriptor, freeing it for subsequent reuse
-    by the process. When a process terminates, all of its open file descriptors are automatically closed.
- */
-int close(int  fd );
-// Returns 0 on success, or –1 on error
-
+/* Системный вызов write() записывает данные в открытый файл. */
+ssize_t write(int fd, void *buffer, size_t count);
+// Возвращает количество записанных байтов или -1 при ошибке
 
 /*
-    For each open file, the kernel records a file offset, sometimes also called the read-
-    write offset or pointer. This is the location in the file at which the next read() or write()
-    will commence. The file offset is expressed as an ordinal byte position relative to
-    the start of the file. The first byte of the file is at offset 0.
-    The file offset is set to point to the start of the file when the file is opened and
-    is automatically adjusted by each subsequent call to read() or write() so that it points
-    to the next byte of the file after the byte(s) just read or written. Thus, successive
-    read() and write() calls progress sequentially through a file.
-    The lseek() system call adjusts the file offset of the open file referred to by the
-    file descriptor fd, according to the values specified in offset and whence.
- */
-
-off_t lseek(int  fd , off_t  offset , int  whence );
-//Returns new file offset if successful, or –1 on error
+    Системный вызов close() закрывает открытый файловый дескриптор, освобождая его
+    для повторного использования процессом. Когда процесс завершается, все его открытые
+    файловые дескрипторы автоматически закрываются.
+*/
+int close(int fd);
+// Возвращает 0 при успешном выполнении или -1 при ошибке
 
 /*
-    The  ioctl()  system  call  is  a  general-purpose  mechanism  for  performing  file  and
-    device operations that fall outside the universal I/O model described earlier in this
-    chapter.
- */
-int ioctl(int  fd , int  request , ... /*  argp  */);
-//Value returned on success depends on request, or –1 on error
+    Для каждого открытого файла ядро записывает смещение файла, иногда также называемое
+    указателем на чтение/запись. Это позиция в файле, с которой начнется следующая
+    операция read() или write().
+*/
+off_t lseek(int fd, off_t offset, int whence);
+// Возвращает новое смещение файла при успехе или -1 при ошибке
 
+/*
+    Системный вызов ioctl() — это универсальный механизм для выполнения операций с файлами и
+    устройствами, которые не укладываются в общую модель ввода-вывода.
+*/
+int ioctl(int fd, int request, ... /* argp */);
+// Возвращаемое значение при успешном выполнении зависит от запроса или -1 при ошибке
+
+/* Системный вызов fcntl() выполняет ряд управляющих операций над открытым файловым дескриптором. */
+#include <fcntl.h>
+int fcntl(int fd, int cmd, ...);
+// Возвращаемое значение при успехе зависит от cmd или -1 при ошибке
+
+/*
+    Вызов dup() принимает старый дескриптор файла oldfd и возвращает новый дескриптор,
+    который ссылается на то же открытое описание файла. Новый дескриптор гарантированно
+    будет наименьшим неиспользуемым дескриптором файла.
+*/
+#include <unistd.h>
+int dup(int oldfd);
+int dup2(int oldfd, int newfd);
+int dup3(int oldfd, int newfd, int flags);
+// Возвращает (новый) файловый дескриптор при успехе или -1 при ошибке
+
+/*
+    Системные вызовы pread() и pwrite() работают аналогично read() и write(),
+    за исключением того, что ввод-вывод выполняется в позиции offset, а не в текущем смещении файла.
+*/
+#include <unistd.h>
+ssize_t pread(int fd, void *buf, size_t count, off_t offset);
+// Возвращает количество прочитанных байтов, 0 при EOF или -1 при ошибке
+ssize_t pwrite(int fd, const void *buf, size_t count, off_t offset);
+// Возвращает количество записанных байтов или -1 при ошибке
+
+/* Системные вызовы readv() и writev() выполняют scatter-gather ввод-вывод. */
+#include <sys/uio.h>
+ssize_t readv(int fd, const struct iovec *iov, int iovcnt);
+// Возвращает количество прочитанных байтов, 0 при EOF или -1 при ошибке
+ssize_t writev(int fd, const struct iovec *iov, int iovcnt);
+// Возвращает количество записанных байтов или -1 при ошибке
+
+/* Системные вызовы truncate() и ftruncate() устанавливают размер файла в значение, указанное length. */
+#include <unistd.h>
+int truncate(const char *pathname, off_t length);
+int ftruncate(int fd, off_t length);
+// Оба возвращают 0 при успехе или -1 при ошибке
+
+/* Функция mkstemp() генерирует уникальное имя файла на основе шаблона, указанного вызвавшим процессом, и открывает файл, возвращая файловый дескриптор. */
+#include <stdlib.h>
+int mkstemp(char *template);
+// Возвращает файловый дескриптор при успехе или -1 при ошибке
+
+/* Функция tmpfile() создает временный файл с уникальным именем, открытый для чтения и записи. */
+#include <stdio.h>
+FILE *tmpfile(void);
+// Возвращает указатель на файл при успехе или NULL при ошибке
+
+/*Важные дополнения:
+- dup и dup2: Дублирование дескрипторов позволяет направлять вывод одного файла в другой, что может быть полезно для перенаправления ввода/вывода.
+- pread и pwrite: Независимо от текущего смещения, указание конкретной позиции в файле позволяет работать с данными в произвольной позиции, что может быть полезно для записи логов и работы с базами данных.*/
