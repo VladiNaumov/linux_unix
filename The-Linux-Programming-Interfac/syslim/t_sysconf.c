@@ -1,32 +1,46 @@
-#include "../lib/tlpi_hdr.h"
+/*************************************************************************\
+*                  Copyright (C) Michael Kerrisk, 2024.                   *
+*                                                                         *
+* This program is free software. You may use, modify, and redistribute it *
+* under the terms of the GNU General Public License as published by the   *
+* Free Software Foundation, either version 3 or (at your option) any      *
+* later version. This program is distributed without any warranty.  See   *
+* the file COPYING.gpl-v3 for details.                                    *
+\*************************************************************************/
 
-static void sysconf_print(const char *, int);
+/* Listing 11-1 */
 
-int main(void)
+/* t_sysconf.c
+
+   Demonstrate the use of sysconf() to retrieve system limits.
+*/
+#include "tlpi_hdr.h"
+
+static void             /* Print 'msg' plus sysconf() value for 'name' */
+sysconfPrint(const char *msg, int name)
 {
-	sysconf_print("_SC_ARG_MAX", _SC_ARG_MAX);
-	sysconf_print("_SC_LOGIN_NAME_MAX", _SC_LOGIN_NAME_MAX);
-	sysconf_print("_SC_OPEN_MAX", _SC_OPEN_MAX);
-	sysconf_print("_SC_NGROUPS_MAX", _SC_NGROUPS_MAX);
-	sysconf_print("_SC_PAGE_SIZE", _SC_PAGE_SIZE);
-	sysconf_print("_SC_RTSIG_MAX", _SC_RTSIG_MAX);
+    long lim;
 
-	exit(EXIT_SUCCESS);
+    errno = 0;
+    lim = sysconf(name);
+    if (lim != -1) {        /* Call succeeded, limit determinate */
+        printf("%s %ld\n", msg, lim);
+    } else {
+        if (errno == 0)     /* Call succeeded, limit indeterminate */
+            printf("%s (indeterminate)\n", msg);
+        else                /* Call failed */
+            errExit("sysconf %s", msg);
+    }
 }
 
-// print `msg` plus sysconf() value for `name`
-static void sysconf_print(const char *msg, int name)
+int
+main(int argc, char *argv[])
 {
-	errno = 0;
-	long lim = sysconf(name);
-
-	if (lim != -1) {
-		printf("%s %ld\n", msg, lim);
-	} else {
-		if (errno == 0) {
-			printf("%s (indeterminate)\n", msg);
-		} else {
-			errExit("sysconf %s", msg);
-		}
-	}
+    sysconfPrint("_SC_ARG_MAX:        ", _SC_ARG_MAX);
+    sysconfPrint("_SC_LOGIN_NAME_MAX: ", _SC_LOGIN_NAME_MAX);
+    sysconfPrint("_SC_OPEN_MAX:       ", _SC_OPEN_MAX);
+    sysconfPrint("_SC_NGROUPS_MAX:    ", _SC_NGROUPS_MAX);
+    sysconfPrint("_SC_PAGESIZE:       ", _SC_PAGESIZE);
+    sysconfPrint("_SC_RTSIG_MAX:      ", _SC_RTSIG_MAX);
+    exit(EXIT_SUCCESS);
 }

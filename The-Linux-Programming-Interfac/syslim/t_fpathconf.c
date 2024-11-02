@@ -1,26 +1,44 @@
-#include "../lib/tlpi_hdr.h"
+/*************************************************************************\
+*                  Copyright (C) Michael Kerrisk, 2024.                   *
+*                                                                         *
+* This program is free software. You may use, modify, and redistribute it *
+* under the terms of the GNU General Public License as published by the   *
+* Free Software Foundation, either version 3 or (at your option) any      *
+* later version. This program is distributed without any warranty.  See   *
+* the file COPYING.gpl-v3 for details.                                    *
+\*************************************************************************/
 
-static void fpathconf_print(const char *, int, int);
+/* Listing 11-2 */
 
-int main(void)
+/* t_fpathconf.c
+
+   Demonstrate the use of fpathconf() to retrieve the values of
+   pathname-related limits.
+*/
+#include "tlpi_hdr.h"
+
+static void             /* Print 'msg' plus value of fpathconf(fd, name) */
+fpathconfPrint(const char *msg, int fd, int name)
 {
-	fpathconf_print("_PC_NAME_MAX", STDIN_FILENO, _PC_NAME_MAX);
-	fpathconf_print("_PC_PATH_MAX", STDIN_FILENO, _PC_PATH_MAX);
-	fpathconf_print("_PC_PIPE_BUF", STDIN_FILENO, _PC_PIPE_BUF);
-	exit(EXIT_SUCCESS);
+    long lim;
+
+    errno = 0;
+    lim = fpathconf(fd, name);
+    if (lim != -1) {        /* Call succeeded, limit determinate */
+        printf("%s %ld\n", msg, lim);
+    } else {
+        if (errno == 0)     /* Call succeeded, limit indeterminate */
+            printf("%s (indeterminate)\n", msg);
+        else                /* Call failed */
+            errExit("fpathconf %s", msg);
+    }
 }
 
-static void fpathconf_print(const char *msg, int fd, int name)
+int
+main(int argc, char *argv[])
 {
-	errno = 0;
-	long limit = fpathconf(fd, name);
-	if (limit != -1) {
-		printf("%s %ld\n", msg, limit);
-	} else {
-		if (errno == 0) {
-			printf("%s (indeterminate)\n", msg);
-		} else {
-			errExit("fpathconf %s", msg);
-		}
-	}
+    fpathconfPrint("_PC_NAME_MAX: ", STDIN_FILENO, _PC_NAME_MAX);
+    fpathconfPrint("_PC_PATH_MAX: ", STDIN_FILENO, _PC_PATH_MAX);
+    fpathconfPrint("_PC_PIPE_BUF: ", STDIN_FILENO, _PC_PIPE_BUF);
+    exit(EXIT_SUCCESS);
 }

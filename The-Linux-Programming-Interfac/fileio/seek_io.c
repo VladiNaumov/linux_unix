@@ -1,99 +1,113 @@
-/*
- * seek_io.c: a program to demostrate the usage of `lseek(2)`
- *
- * usage: seek_io file {options} 
- * 	
- * options: 
- * 	soffset: seek to byte offset from the start of the file
- * 	rlength: read length bytes from the file, starting at the current
- * 		file offset, and display them in text form
- * 	Rlength: read length bytes from the file, starting at the current
- * 		file offset, and display them in hexadecimal form
- * 	wstr: write the string of characters specified in str at the current
- * 		file offset
- *
- * compile: gcc seek_io.c ../lib/get_num.c ../lib/error_functions.c -o seek_io
-*/
+/*************************************************************************\
+*                  Copyright (C) Michael Kerrisk, 2024.                   *
+*                                                                         *
+* This program is free software. You may use, modify, and redistribute it *
+* under the terms of the GNU General Public License as published by the   *
+* Free Software Foundation, either version 3 or (at your option) any      *
+* later version. This program is distributed without any warranty.  See   *
+* the file COPYING.gpl-v3 for details.                                    *
+\*************************************************************************/
 
+/* Listing 4-3 */
+
+/* seek_io.c
+
+   Demonstrate the use of lseek() and file I/O system calls.
+
+   Usage: seek_io file {r<length>|R<length>|w<string>|s<offset>}...
+
+   This program opens the file named on its command line, and then performs
+   the file I/O operations specified by its remaining command-line arguments:
+
+           r<length>    Read 'length' bytes from the file at current
+                        file offset, displaying them as text.
+
+           R<length>    Read 'length' bytes from the file at current
+                        file offset, displaying them in hex.
+
+           w<string>    Write 'string' at current file offset.
+
+           s<offset>    Set the file offset to 'offset'.
+
+   Example:
+
+        seek_io myfile wxyz s1 r2
+*/
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <ctype.h>
-#include "../lib/tlpi_hdr.h"
+#include "tlpi_hdr.h"
 
-int main(int ac, char *av[])
+int
+main(int argc, char *argv[])
 {
-	size_t len;
-	off_t offset;
-	int fd, ap, j;
-	char *buf = NULL;
-	ssize_t numRead, numWritten;
+    size_t len;
+    off_t offset;
+    int fd, ap, j;
+    unsigned char *buf;
+    ssize_t numRead, numWritten;
 
-	if (ac < 3 || strcmp(av[1], "--help") == 0) {
-		usageErr(
-			"%s file {r<length>|R<length>|w<string>|s<offset>}...\n",
-			av[0]);
-	}
+    if (argc < 3 || strcmp(argv[1], "--help") == 0)
+        usageErr("%s file {r<length>|R<length>|w<string>|s<offset>}...\n",
+                 argv[0]);
 
-	fd = open(av[1], O_RDWR | O_CREAT, 0666);
-	if (fd == -1) {
-		errExit("open");
-	}
+    fd = open(argv[1], O_RDWR | O_CREAT,
+                S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP |
+                S_IROTH | S_IWOTH);                     /* rw-rw-rw- */
+    if (fd == -1)
+        errExit("open");
 
-	// iterate over all the operation options
-	for (ap = 2; ap < ac; ap++) {
-		switch (av[ap][0]) {
-		case 'r': // display bytes at current offset, as text
-		case 'R': // display bytes at current offset, in hex
-			len = getLong(&av[ap][1], GN_ANY_BASE, av[ap]);
-			buf = malloc(len);
-			if (buf == NULL) {
-				errExit("malloc");
-			}
-			numRead = read(fd, buf, len);
-			if (numRead == -1) {
-				errExit("read");
-			}
-			if (numRead == 0) {
-				printf("%s: end-of-file\n", av[ap]);
-			} else {
-				printf("%s: ", av[ap]);
-				for (j = 0; j < numRead; j++) {
-					if (av[ap][0] == 'r') {
-						printf("%c ",
-						       isprint((unsigned char)
-								       buf[j]) ?
-								     buf[j] :
-								     '?');
-					} else {
-						printf("%02x ",
-						       (unsigned int)buf[j]);
-					}
-				}
-				printf("\n");
-			}
-			free(buf);
-			buf = NULL;
-			break;
-		case 'w': // write string at current offset
-			numWritten = write(fd, &av[ap][1], strlen(&av[ap][1]));
-			if (numWritten == -1) {
-				errExit("write");
-			}
-			printf("%s: wrote %ld bytes\n", av[ap],
-			       (long)numWritten);
-			break;
-		case 's':
-			offset = getLong(&av[ap][1], GN_ANY_BASE, av[ap]);
-			if (lseek(fd, offset, SEEK_CUR) == -1) {
-				errExit("lseek");
-			}
-			printf("%s: seek succeeded\n", av[ap]);
-			break;
-		default:
-			cmdLineErr("Argument must start with [rRws]: %s\n",
-				   av[ap]);
-		}
-	}
+    for (ap = 2; ap < argc; ap++) {
+        switch (argv[ap][0]) {
+        case 'r':   /* Display bytes at current offset, as text */
+        case 'R':   /* Display bytes at current offset, in hex */
+            len = getLong(&argv[ap][1], GN_ANY_BASE, argv[ap]);
 
-	exit(EXIT_SUCCESS);
+            buf = malloc(len);
+            if (buf == NULL)
+                errExit("malloc");
+
+            numRead = read(fd, buf, len);
+            if (numRead == -1)
+                errExit("read");
+
+            if (numRead == 0) {
+                printf("%s: end-of-file\n", argv[ap]);
+            } else {
+                printf("%s: ", argv[ap]);
+                for (j = 0; j < numRead; j++) {
+                    if (argv[ap][0] == 'r')
+                        printf("%c", isprint(buf[j]) ?  buf[j] : '?');
+                    else
+                        printf("%02x ", buf[j]);
+                }
+                printf("\n");
+            }
+
+            free(buf);
+            break;
+
+        case 'w':   /* Write string at current offset */
+            numWritten = write(fd, &argv[ap][1], strlen(&argv[ap][1]));
+            if (numWritten == -1)
+                errExit("write");
+            printf("%s: wrote %ld bytes\n", argv[ap], (long) numWritten);
+            break;
+
+        case 's':   /* Change file offset */
+            offset = getLong(&argv[ap][1], GN_ANY_BASE, argv[ap]);
+            if (lseek(fd, offset, SEEK_SET) == -1)
+                errExit("lseek");
+            printf("%s: seek succeeded\n", argv[ap]);
+            break;
+
+        default:
+            cmdLineErr("Argument must start with [rRws]: %s\n", argv[ap]);
+        }
+    }
+
+    if (close(fd) == -1)
+        errExit("close");
+
+    exit(EXIT_SUCCESS);
 }
