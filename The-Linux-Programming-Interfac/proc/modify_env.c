@@ -1,32 +1,57 @@
-/*
- * compile: gcc modify_env.c ../lib/error_functions.c -o modify_env
-*/
+/*************************************************************************\
+*                  Copyright (C) Michael Kerrisk, 2024.                   *
+*                                                                         *
+* This program is free software. You may use, modify, and redistribute it *
+* under the terms of the GNU General Public License as published by the   *
+* Free Software Foundation, either version 3 or (at your option) any      *
+* later version. This program is distributed without any warranty.  See   *
+* the file COPYING.gpl-v3 for details.                                    *
+\*************************************************************************/
 
-#include "../lib/tlpi_hdr.h"
+/* Listing 6-4 */
+
+/* modify_env.c
+
+   Demonstrate modification of the process environment list.
+
+   Usage: modify_env name=value...
+
+   Note: some UNIX implementations do not provide clearenv(), setenv(),
+   and unsetenv().
+*/
+#define _GNU_SOURCE     /* Get various declarations from <stdlib.h> */
+#include <stdlib.h>
+#include "tlpi_hdr.h"
 
 extern char **environ;
 
-int main(int ac, char *av[])
+int
+main(int argc, char *argv[])
 {
-	char **ep = NULL;
+    int j;
+    char **ep;
 
-	clearenv(); /* Erase entire environment */
+    clearenv();         /* Erase entire environment */
 
-	for (int j = 1; j < ac; j += 1) {
-		if (putenv(av[j]) != 0) {
-			errExit("putenv: %s", av[j]);
-		}
-	}
+    /* Add any definitions specified on command line to environment */
 
-	if (setenv("GREET", "Hello world", 0) == -1) {
-		errExit("setenv");
-	}
+    for (j = 1; j < argc; j++)
+        if (putenv(argv[j]) != 0)
+            errExit("putenv: %s", argv[j]);
 
-	unsetenv("BYE");
+    /* Add a definition for GREET if one does not already exist */
 
-	for (ep = environ; *ep != NULL; ep += 1) {
-		puts(*ep);
-	}
+    if (setenv("GREET", "Hello world", 0) == -1)
+        errExit("setenv");
 
-	exit(EXIT_SUCCESS);
+    /* Remove any existing definition of BYE */
+
+    unsetenv("BYE");
+
+    /* Display current environment */
+
+    for (ep = environ; *ep != NULL; ep++)
+        puts(*ep);
+
+    exit(EXIT_SUCCESS);
 }

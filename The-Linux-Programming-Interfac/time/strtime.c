@@ -1,49 +1,59 @@
-/*
-$ gccs strtime.c ../lib/error_functions.c
-$ ./a.out "9:39:46pm 1 Feb 2011" "%I:%M:%S%p %d %b %Y"
-calendar time (secs since epoch): 1296567586
-strftime() yields: 09:39:46PM 01 Feb 2011
-*/
+/*************************************************************************\
+*                  Copyright (C) Michael Kerrisk, 2024.                   *
+*                                                                         *
+* This program is free software. You may use, modify, and redistribute it *
+* under the terms of the GNU General Public License as published by the   *
+* Free Software Foundation, either version 3 or (at your option) any      *
+* later version. This program is distributed without any warranty.  See   *
+* the file COPYING.gpl-v3 for details.                                    *
+\*************************************************************************/
 
+/* Listing 10-3 */
+
+/* strtime.c
+
+   Demonstrate the use of strptime() and strftime().
+
+   Calls strptime() using the given "format" to process the "input-date+time".
+   The conversion is then reversed by calling strftime() with the given
+   "out-format" (or a default format if this argument is omitted).
+*/
+#if ! defined(__sun)
+#ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE
+#endif
+#endif
 #include <time.h>
 #include <locale.h>
-#include "../lib/tlpi_hdr.h"
+#include "tlpi_hdr.h"
 
 #define SBUF_SIZE 1000
 
-int main(int ac, char *av[])
+int
+main(int argc, char *argv[])
 {
-	if (ac < 3 || ac > 4) {
-		usageErr("%s input-date-time in-format [out-format]\n", av[0]);
-	}
+    struct tm tm;
+    char sbuf[SBUF_SIZE];
+    char *ofmt;
 
-	// use lcoale settings in conversions
-	if (setlocale(LC_ALL, "") == NULL) {
-		errExit("setlocal");
-	}
+    if (argc < 3 || strcmp(argv[1], "--help") == 0)
+        usageErr("%s input-date-time in-format [out-format]\n", argv[0]);
 
-	struct tm tm_buf;
-	char str_buf[SBUF_SIZE];
+    if (setlocale(LC_ALL, "") == NULL)
+        errExit("setlocale");   /* Use locale settings in conversions */
 
-	// initialize `tm_buf`
-	memset(&tm_buf, 0, sizeof(tm_buf));
+    memset(&tm, 0, sizeof(struct tm));          /* Initialize 'tm' */
+    if (strptime(argv[1], argv[2], &tm) == NULL)
+        fatal("strptime");
 
-	if (strptime(av[1], av[2], &tm_buf) == NULL) {
-		fatal("strptime");
-	}
-	// tm_isdist is not set, tell `mktime(3)` to determine this itself.
-	tm_buf.tm_isdst = -1;
+    tm.tm_isdst = -1;           /* Not set by strptime(); tells mktime()
+                                   to determine if DST is in effect */
+    printf("calendar time (seconds since Epoch): %ld\n", (long) mktime(&tm));
 
-	printf("calendar time (secs since epoch): %ld\n",
-	       (long)mktime(&tm_buf));
+    ofmt = (argc > 3) ? argv[3] : "%H:%M:%S %A, %d %B %Y %Z";
+    if (strftime(sbuf, SBUF_SIZE, ofmt, &tm) == 0)
+        fatal("strftime returned 0");
+    printf("strftime() yields: %s\n", sbuf);
 
-	char *out_format = (ac == 4) ? av[3] : av[2];
-	// A return of `0` does not necessarily indicate an error
-	if (strftime(str_buf, SBUF_SIZE, out_format, &tm_buf) == 0) {
-		fatal("strftime returned 0");
-	}
-	printf("strftime() yields: %s\n", str_buf);
-
-	exit(EXIT_SUCCESS);
+    exit(EXIT_SUCCESS);
 }

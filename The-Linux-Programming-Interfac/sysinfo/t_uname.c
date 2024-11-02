@@ -1,27 +1,41 @@
-#include <stdio.h>
-#include <stdlib.h>
-#ifdef __linux
-#define __USE_GNU
-#endif
+/*************************************************************************\
+*                  Copyright (C) Michael Kerrisk, 2024.                   *
+*                                                                         *
+* This program is free software. You may use, modify, and redistribute it *
+* under the terms of the GNU General Public License as published by the   *
+* Free Software Foundation, either version 3 or (at your option) any      *
+* later version. This program is distributed without any warranty.  See   *
+* the file COPYING.gpl-v3 for details.                                    *
+\*************************************************************************/
 
+/* Listing 12-2 */
+
+/* t_uname.c
+
+   Demonstrate the use of the uname() system call, which returns various
+   identifying information about the system.
+*/
+#ifdef __linux__
+#define _GNU_SOURCE
+#endif
 #include <sys/utsname.h>
-#include "../lib/tlpi_hdr.h"
+#include "tlpi_hdr.h"
 
-int main(void) {
-	struct utsname uts;
+int
+main(int argc, char *argv[])
+{
+    struct utsname uts;
 
-	if (uname(&uts) == -1) {
-		errExit("uname(2)");
-	}
+    if (uname(&uts) == -1)
+        errExit("uname");
 
-	printf("Node name:   %s\n", uts.nodename);
-	printf("System name: %s\n", uts.sysname);
-	printf("Release:     %s\n", uts.release);
-	printf("Version:     %s\n", uts.version);
-	printf("Machine:     %s\n", uts.machine);
-
-#ifdef __USE_GNU
-	printf("Domain name: %s\n", uts.domainname);
+    printf("Node name:   %s\n", uts.nodename);
+    printf("System name: %s\n", uts.sysname);
+    printf("Release:     %s\n", uts.release);
+    printf("Version:     %s\n", uts.version);
+    printf("Machine:     %s\n", uts.machine);
+#ifdef _GNU_SOURCE
+    printf("Domain name: %s\n", uts.domainname);
 #endif
-	exit(EXIT_SUCCESS);
+    exit(EXIT_SUCCESS);
 }

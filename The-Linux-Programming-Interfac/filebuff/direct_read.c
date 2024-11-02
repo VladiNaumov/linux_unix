@@ -1,47 +1,70 @@
-/*
- * usage: direct_read FILE NUM_BYTES_TO_READ [OFFSET] [BUFF_ALIGNMENT]
- */
-#define _GNU_SOURCE
+/*************************************************************************\
+*                  Copyright (C) Michael Kerrisk, 2024.                   *
+*                                                                         *
+* This program is free software. You may use, modify, and redistribute it *
+* under the terms of the GNU General Public License as published by the   *
+* Free Software Foundation, either version 3 or (at your option) any      *
+* later version. This program is distributed without any warranty.  See   *
+* the file COPYING.gpl-v3 for details.                                    *
+\*************************************************************************/
 
+/* Listing 13-1 */
+
+/* direct_read.c
+
+   Demonstrate the use of O_DIRECT to perform I/O bypassing the buffer cache
+   ("direct I/O").
+
+   Usage: direct_read file length [offset [alignment]]
+
+   This program is Linux-specific.
+*/
+#define _GNU_SOURCE     /* Obtain O_DIRECT definition from <fcntl.h> */
 #include <fcntl.h>
-#include "../lib/tlpi_hdr.h"
+#include <malloc.h>
+#include "tlpi_hdr.h"
 
-int main(int ac, char *av[])
+int
+main(int argc, char *argv[])
 {
-	if (ac < 3) {
-		usageErr("%s FILE NUM_BYTES_TO_READ [OFFSET] [BUFF_ALIGNMENT]");
-	}
+    int fd;
+    ssize_t numRead;
+    size_t length, alignment;
+    off_t offset;
+    char *buf;
 
-	int64_t num_bytes_to_read =
-		getLong(av[2], GN_ANY_BASE, "num_bytes_to_read");
-	int64_t offset = (ac > 3) ? getLong(av[3], GN_ANY_BASE, "offset") : 0;
-	int64_t alignment =
-		(ac > 4) ? getLong(av[4], GN_ANY_BASE, "alignment") : 4096;
+    if (argc < 3 || strcmp(argv[1], "--help") == 0)
+        usageErr("%s file length [offset [alignment]]\n", argv[0]);
 
-	int fd = open(av[1], O_RDONLY | O_DIRECT);
-	if (fd == -1) {
-		perror("open(2)");
-		errExit("open");
-	}
+    length = getLong(argv[2], GN_ANY_BASE, "length");
+    offset = (argc > 3) ? getLong(argv[3], GN_ANY_BASE, "offset") : 0;
+    alignment = (argc > 4) ? getLong(argv[4], GN_ANY_BASE, "alignment") : 4096;
 
-	char *ptr = NULL;
-	int res = posix_memalign((void **)&ptr, alignment, num_bytes_to_read);
-	if (res != 0) {
-		printf("error code of posix_memalign: %d\n", res);
-		errExit("posix_memalign");
-	}
+    fd = open(argv[1], O_RDONLY | O_DIRECT);
+    if (fd == -1)
+        errExit("open");
 
-	if (lseek(fd, offset, SEEK_SET) == (off_t)-1) {
-		perror("lseek(2)");
-		errExit("lseek");
-	}
+    /* memalign() allocates a block of memory aligned on an address that
+       is a multiple of its first argument. By specifying this argument as
+       2 * 'alignment' and then adding 'alignment' to the returned pointer,
+       we ensure that 'buf' is aligned on an odd multiple of
+       'alignment'. We do this to ensure that if, for example, we ask
+       for a 256-byte aligned buffer, we don't accidentally get
+       a buffer that is also aligned on a 512-byte boundary. */
 
-	ssize_t num_read = read(fd, ptr, (size_t)num_bytes_to_read);
-	if (num_read == -1) {
-		perror("read(2)");
-		errExit("read");
-	}
-	printf("Read %ld bytes\n", (long)num_read);
+    buf = memalign(alignment * 2, length + alignment);
+    if (buf == NULL)
+        errExit("memalign");
 
-	exit(EXIT_SUCCESS);
+    buf += alignment;
+
+    if (lseek(fd, offset, SEEK_SET) == -1)
+        errExit("lseek");
+
+    numRead = read(fd, buf, length);
+    if (numRead == -1)
+        errExit("read");
+    printf("Read %ld bytes\n", (long) numRead);
+
+    exit(EXIT_SUCCESS);
 }
